@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/setup-python@0b5c6ecbdb5895b57d5622c74b8e653c2f42d69e  # v5.4.0
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Type check
+        run: mypy botkit_core/
+      - name: Test
+        run: pytest -q
+
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@3b2f6e4c4c1b8c4d5e6f7a8b9c0d1e2f3a4b5c6d  # v2.6.1
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@1f3e9c1e8a4a8f3b8e7c9d0a1b2c3d4e5f6a7b8c9  # v0.28.0
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-fs.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@44c1b5c7d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0  # v3.28.0
+        if: always()
+        with:
+          sarif_file: "trivy-fs.sarif"
