@@ -13,12 +13,17 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from aiohttp import web
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, Counter, generate_latest
 
 logger = logging.getLogger(__name__)
 
 
-UPDATES_TOTAL = Counter("bot_updates_total", "Total updates received from Telegram", ["type"])
+# Dedicated registry so the shared counters never collide with a
+# bot module that registers its own metrics on the global default registry.
+REGISTRY = CollectorRegistry()
+
+
+UPDATES_TOTAL = Counter("bot_updates_total", "Total updates received from Telegram", ["type"], registry=REGISTRY)
 
 # Set by each bot's entrypoint to enable error accounting (name is bot-specific,
 # e.g. botkit_membership uses ERRORS_TOTAL). Kept as a variable so the shared
@@ -62,7 +67,7 @@ async def health(request: web.Request) -> web.Response:
 
 
 async def metrics(request: web.Request) -> web.Response:
-    return web.Response(body=generate_latest(), headers={"Content-Type": CONTENT_TYPE_LATEST})
+    return web.Response(body=generate_latest(REGISTRY), headers={"Content-Type": CONTENT_TYPE_LATEST})
 
 
 def create_metrics_app() -> web.Application:
