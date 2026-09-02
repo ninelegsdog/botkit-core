@@ -16,12 +16,12 @@ import sys
 from typing import Any
 
 try:
-    from pythonjsonlogger.json import JsonFormatter  # type: ignore
+    from pythonjsonlogger.json import JsonFormatter
 
     _has_json = True
 except ImportError:
     try:
-        from pythonjsonlogger import jsonlogger  # type: ignore
+        from pythonjsonlogger import jsonlogger
 
         JsonFormatter = jsonlogger.JsonFormatter  # type: ignore
         _has_json = True
