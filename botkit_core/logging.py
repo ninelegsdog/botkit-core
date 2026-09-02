@@ -59,9 +59,9 @@ class ConversationContextFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         if not hasattr(record, "conversation_id"):
-            setattr(record, "conversation_id", _conversation_id_ctx.get())
+            record.conversation_id = _conversation_id_ctx.get()
         if not hasattr(record, "bot"):
-            setattr(record, "bot", _bot_name_ctx.get())
+            record.bot = _bot_name_ctx.get()
         return True
 
 
@@ -70,7 +70,7 @@ def get_json_formatter() -> logging.Formatter:
     if not _has_json or JsonFormatter is None:
         raise RuntimeError("python-json-logger is not installed; add python-json-logger>=2.0 to dependencies")
     fmt = "%(asctime)s %(levelname)s %(name)s %(message)s %(conversation_id)s %(bot)s"
-    return JsonFormatter(fmt)  # type: ignore[no-any-return]
+    return JsonFormatter(fmt)
 
 
 def setup_logging(
