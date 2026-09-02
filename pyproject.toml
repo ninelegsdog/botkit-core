@@ -20,6 +20,9 @@ dependencies = [
 [tool.setuptools.packages.find]
 include = ["botkit_core*"]
 
+[tool.setuptools.package-data]
+botkit_core = ["py.typed"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
