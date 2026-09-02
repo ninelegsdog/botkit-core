@@ -1,73 +1,77 @@
-"""Shared Prometheus metrics skeleton for BotKit bots.
+"""Shared RED metrics for all BotKit bots.
 
 Exposes the common update/error counters and the aiohttp metrics/health
-endpoints. Extra per-bot counters are registered by the bot's own code via
-``register_*`` helpers, and ``start_metrics_server`` keeps the same surface
-across all bots.
+endpoints. Per-bot domain counters are registered by the bot's own code.
+``start_metrics_server`` keeps the same surface across all bots.
+
+Metric prefix: ``botkit_`` — aligned with the Grafana dashboard queries.
 """
 from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
 from typing import Any
 
 from aiohttp import web
-from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, Counter, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 logger = logging.getLogger(__name__)
 
+# ── RED metrics (default registry, prefix botkit_) ──────
 
-# Dedicated registry so the shared counters never collide with a
-# bot module that registers its own metrics on the global default registry.
-REGISTRY = CollectorRegistry()
+BOTKIT_UPDATES_TOTAL = Counter(
+    "botkit_updates_total",
+    "Total updates received from Telegram",
+    ["type"],
+)
+
+BOTKIT_ERRORS_TOTAL = Counter(
+    "botkit_errors_total",
+    "Total errors handled by the global error handler",
+    ["error_type"],
+)
+
+BOTKIT_HANDLER_DURATION = Histogram(
+    "botkit_handler_duration_seconds",
+    "Handler execution time in seconds",
+    buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
+)
+
+BOTKIT_WEBHOOK_DURATION = Histogram(
+    "botkit_webhook_duration_seconds",
+    "Webhook HTTP request processing time",
+    buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
+)
+
+# Backward-compat alias used by errors.py and bot entrypoints.
+ERRORS_TOTAL: Counter = BOTKIT_ERRORS_TOTAL
 
 
-UPDATES_TOTAL = Counter("bot_updates_total", "Total updates received from Telegram", ["type"], registry=REGISTRY)
-
-# Set by each bot's entrypoint to enable error accounting (name is bot-specific,
-# e.g. botkit_membership uses ERRORS_TOTAL). Kept as a variable so the shared
-# error handler can increment whatever counter the bot registers.
-ERRORS_TOTAL: Counter | None = None
-
-
-def set_errors_counter(counter: Counter) -> None:
-    """Point the shared error handler at a bot-specific error counter."""
-    global ERRORS_TOTAL  # pylint: disable=global-statement
-    ERRORS_TOTAL = counter
-
+# ── Middleware ────────────────────────────────────────────
 
 class UpdatesMiddleware:
-    """Counts every incoming update."""
+    """Counts every incoming update and records handler duration."""
 
     async def __call__(self, handler: Any, event: Any, data: dict[str, Any]) -> Any:
-        UPDATES_TOTAL.labels(type=type(event).__name__.lower()).inc()
-        return await handler(event, data)
+        BOTKIT_UPDATES_TOTAL.labels(type=type(event).__name__.lower()).inc()
+        start = time.perf_counter()
+        try:
+            return await handler(event, data)
+        finally:
+            BOTKIT_HANDLER_DURATION.observe(time.perf_counter() - start)
 
 
-@dataclass
-class BaseMetrics:
-    """Common uptime/message counters. Extend per bot for domain metrics."""
-    _start: float = field(default_factory=time.time)
-    messages_processed: int = 0
-    errors: int = 0
-
-    def inc_messages(self) -> None:
-        self.messages_processed += 1
-
-    def inc_errors(self) -> None:
-        self.errors += 1
-
-    def uptime_seconds(self) -> float:
-        return time.time() - self._start
-
+# ── Health + metrics endpoints ───────────────────────────
 
 async def health(request: web.Request) -> web.Response:
     return web.Response(text="ok")
 
 
 async def metrics(request: web.Request) -> web.Response:
-    return web.Response(body=generate_latest(REGISTRY), headers={"Content-Type": CONTENT_TYPE_LATEST})
+    return web.Response(
+        body=generate_latest(),
+        headers={"Content-Type": CONTENT_TYPE_LATEST},
+    )
 
 
 def create_metrics_app() -> web.Application:

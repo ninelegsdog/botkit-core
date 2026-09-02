@@ -1,8 +1,7 @@
 """Shared error handling for BotKit bots.
 
 The per-bot error counter is resolved from :data:`botkit_core.metrics.ERRORS_TOTAL`,
-set by the bot entrypoint via ``set_errors_counter``. Falls back to a no-op counter
-if none was registered so the handler stays safe under any wiring order.
+which always points to the shared ``botkit_errors_total`` counter.
 """
 from __future__ import annotations
 
@@ -18,19 +17,9 @@ from botkit_core import metrics
 
 logger = logging.getLogger(__name__)
 
-# No-op counter used when a bot hasn't registered its real error counter yet.
-_NOOP_COUNTER: Any = None
-
 
 def _error_counter() -> Any:
-    if metrics.ERRORS_TOTAL is not None:
-        return metrics.ERRORS_TOTAL
-    global _NOOP_COUNTER  # pylint: disable=global-statement
-    if _NOOP_COUNTER is None:
-        from prometheus_client import Counter
-
-        _NOOP_COUNTER = Counter("botkit_errors_total_noop", "noop", ["error_type"])
-    return _NOOP_COUNTER
+    return metrics.ERRORS_TOTAL
 
 
 async def default_error_handler(event: TelegramObject, exception: Exception) -> None:
