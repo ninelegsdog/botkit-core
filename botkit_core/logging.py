@@ -16,9 +16,18 @@ import sys
 from typing import Any
 
 try:
-    from pythonjsonlogger import jsonlogger
+    from pythonjsonlogger.json import JsonFormatter  # type: ignore[import-not-found, import-untyped]
+
+    _has_json = True
 except ImportError:
-    jsonlogger = None  # type: ignore[assignment]
+    try:
+        from pythonjsonlogger import jsonlogger  # type: ignore[import-not-found, import-untyped]
+
+        JsonFormatter = jsonlogger.JsonFormatter  # type: ignore[attr-defined]
+        _has_json = True
+    except ImportError:
+        JsonFormatter = None  # type: ignore[assignment]
+        _has_json = False
 
 # ── ContextVar for conversation_id ──────────────────
 
@@ -50,18 +59,18 @@ class ConversationContextFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         if not hasattr(record, "conversation_id"):
-            record.conversation_id = _conversation_id_ctx.get()
+            setattr(record, "conversation_id", _conversation_id_ctx.get())
         if not hasattr(record, "bot"):
-            record.bot = _bot_name_ctx.get()
+            setattr(record, "bot", _bot_name_ctx.get())
         return True
 
 
 def get_json_formatter() -> logging.Formatter:
     """Return JsonFormatter with standard fields."""
-    if jsonlogger is None:
+    if not _has_json or JsonFormatter is None:
         raise RuntimeError("python-json-logger is not installed; add python-json-logger>=2.0 to dependencies")
     fmt = "%(asctime)s %(levelname)s %(name)s %(message)s %(conversation_id)s %(bot)s"
-    return jsonlogger.JsonFormatter(fmt)  # type: ignore[attr-defined]
+    return JsonFormatter(fmt)  # type: ignore[no-any-return]
 
 
 def setup_logging(
