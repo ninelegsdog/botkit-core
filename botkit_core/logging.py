@@ -16,17 +16,17 @@ import sys
 from typing import Any
 
 try:
-    from pythonjsonlogger.json import JsonFormatter  # type: ignore[import-not-found, import-untyped]
+    from pythonjsonlogger.json import JsonFormatter  # type: ignore
 
     _has_json = True
 except ImportError:
     try:
-        from pythonjsonlogger import jsonlogger  # type: ignore[import-not-found, import-untyped]
+        from pythonjsonlogger import jsonlogger  # type: ignore
 
-        JsonFormatter = jsonlogger.JsonFormatter  # type: ignore[attr-defined]
+        JsonFormatter = jsonlogger.JsonFormatter  # type: ignore
         _has_json = True
     except ImportError:
-        JsonFormatter = None  # type: ignore[assignment]
+        JsonFormatter = None  # type: ignore
         _has_json = False
 
 # ── ContextVar for conversation_id ──────────────────

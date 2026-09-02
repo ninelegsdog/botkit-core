@@ -14,7 +14,7 @@ class FakeEvent:
 def test_version() -> None:
     import botkit_core
 
-    assert botkit_core.__version__ == "0.4.2"
+    assert botkit_core.__version__ == "0.4.3"
 
 
 def test_botkit_updates_total_counter() -> None:
