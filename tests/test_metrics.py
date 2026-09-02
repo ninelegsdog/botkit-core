@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-
 from botkit_core import metrics
 
 
@@ -15,7 +14,7 @@ class FakeEvent:
 def test_version() -> None:
     import botkit_core
 
-    assert botkit_core.__version__ == "0.1.0"
+    assert botkit_core.__version__ == "0.4.0"
 
 
 def test_botkit_updates_total_counter() -> None:
