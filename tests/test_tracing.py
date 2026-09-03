@@ -1,7 +1,7 @@
 """Tests for botkit_core.tracing."""
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -77,11 +77,7 @@ class FakeEvent:
         self.update_id = update_id
         self._type = event_type
 
-    def __class_getitem__(cls, item):
-        return cls
 
-    def __class_getitem__(self, item):
-        return type(self)
 
 
 @pytest.mark.asyncio

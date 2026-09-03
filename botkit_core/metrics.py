@@ -1,4 +1,4 @@
-"""Shared RED metrics for all BotKit bots.
+"""Unified health with version for BotKit.
 
 Exposes the common update/error counters and the aiohttp metrics/health
 endpoints. Per-bot domain counters are registered by the bot's own code.
@@ -16,6 +16,11 @@ from aiohttp import web
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 logger = logging.getLogger(__name__)
+
+try:
+    from botkit_core import __version__ as _core_version
+except ImportError:
+    _core_version = "0.0.0"
 
 # ── RED metrics (default registry, prefix botkit_) ──────
 
@@ -64,7 +69,15 @@ class UpdatesMiddleware:
 # ── Health + metrics endpoints ───────────────────────────
 
 async def health(request: web.Request) -> web.Response:
+    # Unified: JSON with version, fallback to text for old probes
+    accept = request.headers.get("Accept", "")
+    if "application/json" in accept:
+        return web.json_response({"status": "ok", "version": _core_version})
     return web.Response(text="ok")
+
+
+async def version(request: web.Request) -> web.Response:
+    return web.json_response({"version": _core_version, "service": "botkit"})
 
 
 async def metrics(request: web.Request) -> web.Response:
@@ -77,6 +90,7 @@ async def metrics(request: web.Request) -> web.Response:
 def create_metrics_app() -> web.Application:
     app = web.Application()
     app.router.add_get("/health", health)
+    app.router.add_get("/version", version)
     app.router.add_get("/metrics", metrics)
     return app
 
