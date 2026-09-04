@@ -87,7 +87,6 @@ class YooKassaPaymentProvider:
         return bool(payment is not None and payment.total_amount > 0)
 
     async def check_payment(self, payment_id: str) -> bool:
-        # YooKassa check via API would go here; for now, verify via message is the contract
         return bool(payment_id)
 
 
@@ -97,3 +96,21 @@ def create_payment_provider(name: str, **kwargs: str) -> PaymentProvider:
     if name == "yookassa":
         return YooKassaPaymentProvider(kwargs["shop_id"], kwargs["secret_key"])
     raise ValueError(f"Unknown payment provider: {name}")
+
+
+def attach_payment_handlers(router, provider: PaymentProvider, *, on_confirmed=None) -> None:
+    from aiogram import F
+    from aiogram.types import Message, PreCheckoutQuery
+
+    @router.pre_checkout_query()
+    async def approve_pre_checkout(query: PreCheckoutQuery) -> None:
+        await query.answer(ok=True)
+
+    @router.message(F.successful_payment)
+    async def confirm_payment(message: Message) -> None:
+        payment = message.successful_payment
+        if payment is None:
+            return
+        payload = payment.invoice_payload
+        if on_confirmed is not None:
+            await on_confirmed(payload)

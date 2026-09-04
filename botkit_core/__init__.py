@@ -2,4 +2,4 @@
 from botkit_core import errors, logging, metrics, payments, sentry, tracing, webhook
 
 __all__ = ["errors", "logging", "metrics", "payments", "sentry", "tracing", "webhook"]
-__version__ = "0.7.0"
+__version__ = "0.7.1"

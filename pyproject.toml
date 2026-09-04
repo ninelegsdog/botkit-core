@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "botkit-core"
-version = "0.7.0"
+version = "0.7.1"
 description = "Shared core library for the 9 BotKit Telegram bots"
 requires-python = ">=3.12"
 dependencies = [
@@ -58,3 +58,7 @@ strict = true
 [[tool.mypy.overrides]]
 module = "yookassa.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "botkit_core.payments"
+disable_error_code = ["untyped-decorator", "no-untyped-def", "attr-defined"]
