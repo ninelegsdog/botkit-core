@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
-from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject, Update
+from aiogram.types import TelegramObject
 
 from botkit_core.logging import get_conversation_id, set_conversation_id
 
@@ -58,7 +58,6 @@ class LoggingMiddleware:
         """Process the event with logging."""
         # Extract conversation_id from update
         conversation_id = self._extract_conversation_id(event)
-        from botkit_core.logging import set_conversation_id
         set_conversation_id(conversation_id)
 
         update_type = type(event).__name__
@@ -118,7 +117,7 @@ class LoggingMiddleware:
                 )
             raise
 
-    def _extract_conversation_id(self, event) -> str:
+    def _extract_conversation_id(self, event: Any) -> str:
         """Extract conversation_id from various update types."""
         # Try chat first (messages, callback queries)
         if hasattr(event, "chat") and event.chat is not None:
@@ -129,9 +128,12 @@ class LoggingMiddleware:
             return str(event.from_user.id)
 
         # For callback queries, try message.chat
-        if hasattr(event, "message") and event.message is not None:
-            if event.message.chat is not None:
-                return str(event.message.chat.id)
+        if (
+            hasattr(event, "message")
+            and event.message is not None
+            and event.message.chat is not None
+        ):
+            return str(event.message.chat.id)
 
         return "-"
 

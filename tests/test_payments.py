@@ -1,8 +1,9 @@
 """Tests for botkit_core.payments."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from aiogram.types import Message
 
 from botkit_core.payments import MockPaymentProvider, YooKassaPaymentProvider, create_payment_provider

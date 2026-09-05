@@ -4,18 +4,15 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from io import StringIO
-from typing import Any
-from unittest.mock import MagicMock, patch
 
 import pytest
 
 from botkit_core.logging import (
     ConversationContextFilter,
+    get_bot_name,
     get_conversation_id,
     get_json_formatter,
-    get_bot_name,
     set_bot_name,
     set_conversation_id,
     setup_logging,

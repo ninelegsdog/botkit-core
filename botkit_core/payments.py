@@ -101,7 +101,7 @@ def create_payment_provider(name: str, **kwargs: str) -> PaymentProvider:
 
 def attach_payment_handlers(router, provider: PaymentProvider, *, on_confirmed=None) -> None:
     from aiogram import F
-    from aiogram.types import Message, PreCheckoutQuery
+    from aiogram.types import PreCheckoutQuery
 
     @router.pre_checkout_query()
     async def approve_pre_checkout(query: PreCheckoutQuery) -> None:
