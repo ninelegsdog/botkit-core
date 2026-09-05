@@ -6,13 +6,14 @@ and create_payment/check_payment (delivery etc.) via aliases.
 """
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from aiogram.types import Message
 
 STARS_CURRENCY = "XTR"
 
 
+@runtime_checkable
 class PaymentProvider(Protocol):
     async def create_invoice_link(
         self, *, title: str, description: str, payload: str, amount: int, currency: str = "XTR"
@@ -114,3 +115,4 @@ def attach_payment_handlers(router, provider: PaymentProvider, *, on_confirmed=N
         payload = payment.invoice_payload
         if on_confirmed is not None:
             await on_confirmed(payload)
+

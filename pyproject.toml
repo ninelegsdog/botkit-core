@@ -37,6 +37,7 @@ dev = [
     "pytest-aiohttp>=1.0",
     "ruff>=0.1.0",
     "mypy>=1.5",
+    "testcontainers[postgres,redis]>=4.10",
 ]
 
 [tool.ruff]
