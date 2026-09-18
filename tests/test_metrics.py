@@ -14,7 +14,18 @@ class FakeEvent:
 def test_version() -> None:
     import botkit_core
 
-    assert botkit_core.__version__ == "0.7.1"
+    assert botkit_core.__version__ == "0.8.0"
+
+
+async def test_health_json_includes_commit(aiohttp_client: Any) -> None:
+    app = metrics.create_metrics_app()
+    client = await aiohttp_client(app)
+    resp = await client.get("/health", headers={"Accept": "application/json"})
+    assert resp.status == 200
+    body = await resp.json()
+    assert body["status"] == "ok"
+    assert body["version"] == "0.8.0"
+    assert body["commit"] == "unknown"
 
 
 def test_botkit_updates_total_counter() -> None:

@@ -9,6 +9,7 @@ Metric prefix: ``botkit_`` — aligned with the Grafana dashboard queries.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Any
 
@@ -17,10 +18,18 @@ from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_
 
 logger = logging.getLogger(__name__)
 
-try:
-    from botkit_core import __version__ as _core_version
-except ImportError:
-    _core_version = "0.0.0"
+def _core_version_str() -> str:
+    """Package version, resolved lazily (circular import at module load time)."""
+    try:
+        from botkit_core import __version__ as v
+    except ImportError:
+        return "0.0.0"
+    return v
+
+
+def _build_sha() -> str:
+    """Build/git commit injected via Docker build ARG (see Dockerfile)."""
+    return os.getenv("BUILD_SHA", "unknown")
 
 # ── RED metrics (default registry, prefix botkit_) ──────
 
@@ -72,12 +81,16 @@ async def health(request: web.Request) -> web.Response:
     # Unified: JSON with version, fallback to text for old probes
     accept = request.headers.get("Accept", "")
     if "application/json" in accept:
-        return web.json_response({"status": "ok", "version": _core_version})
+        return web.json_response(
+            {"status": "ok", "version": _core_version_str(), "commit": _build_sha()}
+        )
     return web.Response(text="ok")
 
 
 async def version(request: web.Request) -> web.Response:
-    return web.json_response({"version": _core_version, "service": "botkit"})
+    return web.json_response(
+        {"version": _core_version_str(), "service": "botkit", "commit": _build_sha()}
+    )
 
 
 async def metrics(request: web.Request) -> web.Response:
