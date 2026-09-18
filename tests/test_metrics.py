@@ -14,7 +14,7 @@ class FakeEvent:
 def test_version() -> None:
     import botkit_core
 
-    assert botkit_core.__version__ == "0.8.0"
+    assert botkit_core.__version__ == "0.8.1"
 
 
 async def test_health_json_includes_commit(aiohttp_client: Any) -> None:
@@ -24,7 +24,7 @@ async def test_health_json_includes_commit(aiohttp_client: Any) -> None:
     assert resp.status == 200
     body = await resp.json()
     assert body["status"] == "ok"
-    assert body["version"] == "0.8.0"
+    assert body["version"] == "0.8.1"
     assert body["commit"] == "unknown"
 
 
