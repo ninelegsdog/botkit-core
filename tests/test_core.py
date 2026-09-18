@@ -14,7 +14,7 @@ from botkit_core import errors, metrics, sentry, webhook
 def test_version() -> None:
     import botkit_core
 
-    assert botkit_core.__version__ == "0.8.1"
+    assert botkit_core.__version__ == "0.8.2"
 
 
 def test_sentry_lazy_noop_no_dsn() -> None:

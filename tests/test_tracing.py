@@ -1,6 +1,7 @@
 """Tests for botkit_core.tracing."""
 from __future__ import annotations
 
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -170,3 +171,49 @@ async def test_tracing_middleware_without_tracer() -> None:
 
         assert result == "ok"
         mock_get_tracer.assert_called_once()
+
+
+@patch("botkit_core.tracing.trace.get_tracer")
+@patch("botkit_core.tracing.trace.set_tracer_provider")
+@patch("botkit_core.tracing.OTLPSpanExporter")
+@patch("botkit_core.tracing.BatchSpanProcessor")
+@patch("botkit_core.tracing.TracerProvider")
+def test_setup_tracing_default_endpoint_without_env(
+    mock_provider_class,
+    mock_processor_class,
+    mock_exporter_class,
+    mock_set_provider,
+    mock_get_tracer,
+) -> None:
+    mock_provider = MagicMock()
+    mock_provider_class.return_value = mock_provider
+    mock_get_tracer.return_value = MagicMock()
+
+    with patch.dict(os.environ, {}, clear=True):
+        setup_tracing("test-bot")
+
+    mock_exporter_class.assert_called_once_with(endpoint="http://127.0.0.1:4318/v1/traces")
+
+
+@patch("botkit_core.tracing.trace.get_tracer")
+@patch("botkit_core.tracing.trace.set_tracer_provider")
+@patch("botkit_core.tracing.OTLPSpanExporter")
+@patch("botkit_core.tracing.BatchSpanProcessor")
+@patch("botkit_core.tracing.TracerProvider")
+def test_setup_tracing_reads_env_endpoint(
+    mock_provider_class,
+    mock_processor_class,
+    mock_exporter_class,
+    mock_set_provider,
+    mock_get_tracer,
+) -> None:
+    mock_provider = MagicMock()
+    mock_provider_class.return_value = mock_provider
+    mock_get_tracer.return_value = MagicMock()
+
+    with patch.dict(os.environ, {"OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318/v1/traces"}):
+        setup_tracing("test-bot")
+
+    mock_exporter_class.assert_called_once_with(
+        endpoint="http://otel-collector:4318/v1/traces"
+    )

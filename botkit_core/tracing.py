@@ -5,6 +5,7 @@ Provides OTLP tracer setup and aiogram middleware for automatic span creation.
 from __future__ import annotations
 
 import contextvars
+import os
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -38,19 +39,25 @@ def set_current_span(span: trace.Span | None) -> None:
 def setup_tracing(
     service_name: str,
     *,
-    otlp_endpoint: str = "http://127.0.0.1:4318/v1/traces",
+    otlp_endpoint: str | None = None,
     sample_rate: float = 1.0,
 ) -> trace.Tracer:
     """Configure OpenTelemetry tracer with OTLP HTTP exporter.
 
     Args:
         service_name: Service name for resource attributes (e.g., "bookingbot").
-        otlp_endpoint: OTLP HTTP endpoint (default: collector on localhost:4318).
+        otlp_endpoint: OTLP HTTP endpoint. Defaults to the standard
+            OTEL_EXPORTER_OTLP_ENDPOINT env var, falling back to the
+            collector on localhost:4318.
         sample_rate: Trace sampling rate 0.0-1.0 (default: 1.0 = all).
 
     Returns:
         Tracer instance for manual instrumentation.
     """
+    if otlp_endpoint is None:
+        otlp_endpoint = os.environ.get(
+            "OTEL_EXPORTER_OTLP_ENDPOINT", "http://127.0.0.1:4318/v1/traces"
+        )
     resource = Resource.create({SERVICE_NAME: service_name})
     provider = TracerProvider(resource=resource)
 
