@@ -35,7 +35,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks
       # Gitleaks: gitleaks-action v3 (а) требует явный GITHUB_TOKEN для PR-сканов,
       # (б) проверку лицензии делает неаутентифицированным запросом к api.github.com -
       # на общих runner'ах тот ловит rate limit и роняет джоб с 'missing gitleaks license'.
