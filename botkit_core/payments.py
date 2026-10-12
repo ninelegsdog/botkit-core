@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from aiogram.types import Message
+from aiogram import F
+from aiogram.types import Message, PreCheckoutQuery
 
 STARS_CURRENCY = "XTR"
 
@@ -99,12 +100,48 @@ def create_payment_provider(name: str, **kwargs: str) -> PaymentProvider:
     raise ValueError(f"Unknown payment provider: {name}")
 
 
-def attach_payment_handlers(router, provider: PaymentProvider, *, on_confirmed=None) -> None:
-    from aiogram import F
-    from aiogram.types import PreCheckoutQuery
+
+def attach_payment_handlers(
+    router,
+    provider: PaymentProvider,
+    *,
+    on_confirmed=None,
+    expected_payloads: set[str] | None = None,
+    expected_amount: int | None = None,
+) -> None:
+    """Register the two handlers Telegram requires for a real payment.
+
+    `pre_checkout_query` is the only gate between the user and the charge: answering
+    `ok=True` unconditionally approves whatever amount arrives, so a client that
+    hand-crafts the update pays, say, 1 Star for a 10-Star product. The original version
+    did exactly that.
+
+    Pass `expected_payloads` (and/or `expected_amount`) to make the check real. With no
+    expectation given the handler still answers `ok=False` rather than approving blindly:
+    approving a payment nobody has described is the failure mode, and a bot that forgot
+    to declare its products should fail closed, not open.
+    """
 
     @router.pre_checkout_query()
     async def approve_pre_checkout(query: PreCheckoutQuery) -> None:
+        payload = getattr(query, "invoice_payload", None)
+        if expected_payloads is None and expected_amount is None:
+            # Nothing was declared, so there is no way to tell a real charge from a
+            # forged one. Refuse: approving an undescribed payment is the failure mode.
+            await query.answer(
+                ok=False, error_message="Покупка не настроена"
+            )
+            return
+        if expected_payloads is not None and payload not in expected_payloads:
+            await query.answer(
+                ok=False, error_message="Неизвестный товар"
+            )
+            return
+        if expected_amount is not None and int(query.total_amount) != expected_amount:
+            await query.answer(
+                ok=False, error_message="Неверная сумма"
+            )
+            return
         await query.answer(ok=True)
 
     @router.message(F.successful_payment)
@@ -113,6 +150,9 @@ def attach_payment_handlers(router, provider: PaymentProvider, *, on_confirmed=N
         if payment is None:
             return
         payload = payment.invoice_payload
+        if expected_payloads is not None and payload not in expected_payloads:
+            # Telegram can replay a successful_payment. An unknown payload here means we
+            # are being told about a charge for something we did not sell.
+            return
         if on_confirmed is not None:
             await on_confirmed(payload)
-
