@@ -1,5 +1,6 @@
 """botkit-core: shared library for the BotKit Telegram bots."""
 from botkit_core import (
+    admin,
     callbacks,
     errors,
     logging,
@@ -12,6 +13,7 @@ from botkit_core import (
 )
 
 __all__ = [
+    "admin",
     "callbacks",
     "errors",
     "logging",
