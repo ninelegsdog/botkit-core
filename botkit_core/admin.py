@@ -14,8 +14,21 @@ depending on which template a given bot was generated from.
 """
 from __future__ import annotations
 
+import hashlib
 import hmac
 import time
+
+
+def _digest(password: str) -> str:
+    """Hex sha256 of the password, used only for comparison.
+
+    This is a length-leak fix, not a password store. There is no salt and no work factor:
+    the value lives in process memory only, exactly as the plaintext did before, and the
+    gate is single-process. Storing the plaintext and comparing digests removes the timing
+    channel without pretending to be a KDF - which it is not, and which would change the
+    constructor's contract for every caller.
+    """
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
 class AdminGate:
@@ -39,7 +52,11 @@ class AdminGate:
         throttle_window: float = 300.0,
         max_attempts: int = 5,
     ) -> None:
-        self._password = password
+        # Compared as a digest, never as the string. `hmac.compare_digest` returns as
+        # soon as the lengths differ, so comparing raw passwords leaks the length of the
+        # admin password to anyone able to time the response. Hashing first makes both
+        # sides fixed-width and the comparison genuinely constant-time.
+        self._password_hash = _digest(password)
         self._admin_ids = set(admin_ids or [])
         self._authorized: set[int] = set()
         self._attempts: dict[int, list[float]] = {}
@@ -52,7 +69,7 @@ class AdminGate:
 
     def authorize(self, user_id: int, password: str) -> bool:
         """Compare in constant time; on failure record the attempt."""
-        if not hmac.compare_digest(password, self._password):
+        if not hmac.compare_digest(_digest(password), self._password_hash):
             now = time.time()
             attempts = self._attempts.setdefault(user_id, [])
             attempts[:] = [t for t in attempts if now - t < self._throttle_window]
