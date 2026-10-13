@@ -8,4 +8,9 @@ build/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-  *.tmp
+*.tmp
+
+# Secrets. .env.example is committed; .env never is.
+.env
+.env.*
+!.env.example
