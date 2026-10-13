@@ -35,3 +35,28 @@ def callback_is_wellformed(data: str | None, prefix: str) -> bool:
     if data is not None and len(data.encode()) > MAX_CALLBACK_BYTES:
         return False
     return parse_callback_int(data, prefix) is not None
+
+
+def parse_callback_int_at(data: str | None, prefix: str, index: int) -> int | None:
+    """Return the integer in segment `index` of `"<prefix>seg:seg:n"`, or None.
+
+    Payloads that carry more than the trailing id - `"book:date:12:2026-10-14"`,
+    `"rem:confirm:delete:91"` - cannot be parsed by :func:`parse_callback_int`, which
+    expects the whole remainder after the prefix to be a bare integer. This reads one
+    named segment instead, and applies the same rules: ASCII digits only, no sign, no
+    underscore, no whitespace, and a length a rowid cannot exceed.
+
+    `index` counts colon-separated segments after `prefix`, so `0` is the first field.
+    Out of range, malformed, or a prefix mismatch all return None rather than raising.
+    """
+    if not data or not data.startswith(prefix):
+        return None
+    parts = data[len(prefix) :].split(":")
+    if index >= len(parts):
+        return None
+    raw = parts[index]
+    if not raw or len(raw) > 18:
+        return None
+    if not raw.isascii() or not raw.isdigit():
+        return None
+    return int(raw)
