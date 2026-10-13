@@ -1,5 +1,25 @@
 # botkit-core
 
+
+[![CI](https://github.com/ninelegsdog/botkit-core/actions/workflows/ci.yml/badge.svg)](https://github.com/ninelegsdog/botkit-core/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ninelegsdog/botkit-core.svg)](LICENSE)
+
+## Contents
+
+- [Why this library exists](#why-this-library-exists)
+- [Install](#install)
+- [Modules](#modules)
+- [Quickstart](#quickstart)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Development process](#development-process)
+- [Compatibility note](#compatibility-note)
+- [License](#license)
+
+> A library, not a service: install it, do not containerise it. Every module is
+> import-safe and side-effect-free — nothing here opens a connection or reads a
+> secret until you call it. Nine production bots pin a tag of this package, so
+> the public surface of `payments.py` and `metrics.py` changes only with a
+> version bump.
 Shared core library for the BotKit Telegram bots — the common surface that would otherwise be
 duplicated in every project: payments, metrics, errors, logging, tracing, Sentry and the
 aiohttp webhook app.
