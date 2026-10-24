@@ -17,14 +17,16 @@ STARS_CURRENCY = "XTR"
 @runtime_checkable
 class PaymentProvider(Protocol):
     async def create_invoice_link(
-        self, *, title: str, description: str, payload: str, amount: int, currency: str = "XTR"
+        self, *, title: str, description: str, payload: str, amount: int,
+        currency: str = "XTR", user_id: int | None = None,
     ) -> str: ...
 
     async def verify_payment(self, message: Message) -> bool: ...
 
     # Aliases for delivery-style API
     async def create_payment(
-        self, *, title: str, description: str, payload: str, amount: int, currency: str = "XTR"
+        self, *, title: str, description: str, payload: str, amount: int,
+        currency: str = "XTR", user_id: int | None = None,
     ) -> str: ...
 
     async def check_payment(self, payment_id: str) -> bool: ...
@@ -32,28 +34,33 @@ class PaymentProvider(Protocol):
 
 class MockPaymentProvider:
     def __init__(
-        self, *, prefix: str = "https://t.me/mock-bot/invoice/", on_confirmed=None
+        self, *, prefix: str = "https://t.me/mock-bot/invoice/", on_confirmed=None,
+        auto_confirm: bool = False,
     ) -> None:
         self._prefix = prefix
         self._on_confirmed = on_confirmed
+        self._auto_confirm = auto_confirm
 
     async def create_invoice_link(
-        self, *, title: str, description: str, payload: str, amount: int, currency: str = "XTR"
+        self, *, title: str, description: str, payload: str, amount: int,
+        currency: str = "XTR", user_id: int | None = None,
     ) -> str:
         link = f"{self._prefix}{payload}"
         # Демо-режим: платёж «успешен» сразу — вызываем on_confirmed, как будто
         # пришёл successful_payment от Telegram. В проде (yookassa/stars) этого
-        # не происходит: активация идёт по webhook. Флаг on_confirmed=None
-        # отключает авто-подтверждение (чистый мок для тестов).
-        if self._on_confirmed is not None:
-            await self._on_confirmed(payload)
+        # не происходит: активация идёт по webhook. on_confirmed=None отключает
+        # авто-подтверждение (чистый мок для тестов).
+        if (self._auto_confirm or self._on_confirmed is not None) and self._on_confirmed is not None:
+            await self._on_confirmed(payload, user_id=user_id)
         return link
 
     async def create_payment(
-        self, *, title: str, description: str, payload: str, amount: int, currency: str = "XTR"
+        self, *, title: str, description: str, payload: str, amount: int,
+        currency: str = "XTR", user_id: int | None = None,
     ) -> str:
         return await self.create_invoice_link(
-            title=title, description=description, payload=payload, amount=amount, currency=currency
+            title=title, description=description, payload=payload, amount=amount,
+            currency=currency, user_id=user_id,
         )
 
     async def verify_payment(self, message: Message) -> bool:
@@ -72,7 +79,8 @@ class YooKassaPaymentProvider:
         Configuration.secret_key = secret_key
 
     async def create_invoice_link(
-        self, *, title: str, description: str, payload: str, amount: int, currency: str = "RUB"
+        self, *, title: str, description: str, payload: str, amount: int,
+        currency: str = "RUB", user_id: int | None = None,
     ) -> str:
         from yookassa import Payment
 
@@ -82,16 +90,18 @@ class YooKassaPaymentProvider:
                 "confirmation": {"type": "redirect", "return_url": "https://t.me/"},
                 "capture": True,
                 "description": description,
-                "metadata": {"payload": payload},
+                "metadata": {"payload": payload, "user_id": user_id},
             }
         )
         return str(payment.confirmation.confirmation_url)
 
     async def create_payment(
-        self, *, title: str, description: str, payload: str, amount: int, currency: str = "RUB"
+        self, *, title: str, description: str, payload: str, amount: int,
+        currency: str = "RUB", user_id: int | None = None,
     ) -> str:
         return await self.create_invoice_link(
-            title=title, description=description, payload=payload, amount=amount, currency=currency
+            title=title, description=description, payload=payload, amount=amount,
+            currency=currency, user_id=user_id,
         )
 
     async def verify_payment(self, message: Message) -> bool:
@@ -107,6 +117,7 @@ def create_payment_provider(name: str, **kwargs: object) -> PaymentProvider:
         return MockPaymentProvider(
             prefix=kwargs.get("prefix", "https://t.me/mock-bot/invoice/"),  # type: ignore[arg-type]
             on_confirmed=kwargs.get("on_confirmed"),
+            auto_confirm=kwargs.get("auto_confirm", False),  # type: ignore[arg-type]
         )
     if name == "yookassa":
         return YooKassaPaymentProvider(kwargs["shop_id"], kwargs["secret_key"])  # type: ignore[arg-type]
