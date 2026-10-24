@@ -31,13 +31,23 @@ class PaymentProvider(Protocol):
 
 
 class MockPaymentProvider:
-    def __init__(self, *, prefix: str = "https://t.me/mock-bot/invoice/") -> None:
+    def __init__(
+        self, *, prefix: str = "https://t.me/mock-bot/invoice/", on_confirmed=None
+    ) -> None:
         self._prefix = prefix
+        self._on_confirmed = on_confirmed
 
     async def create_invoice_link(
         self, *, title: str, description: str, payload: str, amount: int, currency: str = "XTR"
     ) -> str:
-        return f"{self._prefix}{payload}"
+        link = f"{self._prefix}{payload}"
+        # Демо-режим: платёж «успешен» сразу — вызываем on_confirmed, как будто
+        # пришёл successful_payment от Telegram. В проде (yookassa/stars) этого
+        # не происходит: активация идёт по webhook. Флаг on_confirmed=None
+        # отключает авто-подтверждение (чистый мок для тестов).
+        if self._on_confirmed is not None:
+            await self._on_confirmed(payload)
+        return link
 
     async def create_payment(
         self, *, title: str, description: str, payload: str, amount: int, currency: str = "XTR"
@@ -92,11 +102,14 @@ class YooKassaPaymentProvider:
         return bool(payment_id)
 
 
-def create_payment_provider(name: str, **kwargs: str) -> PaymentProvider:
+def create_payment_provider(name: str, **kwargs: object) -> PaymentProvider:
     if name == "mock":
-        return MockPaymentProvider(prefix=kwargs.get("prefix", "https://t.me/mock-bot/invoice/"))
+        return MockPaymentProvider(
+            prefix=kwargs.get("prefix", "https://t.me/mock-bot/invoice/"),  # type: ignore[arg-type]
+            on_confirmed=kwargs.get("on_confirmed"),
+        )
     if name == "yookassa":
-        return YooKassaPaymentProvider(kwargs["shop_id"], kwargs["secret_key"])
+        return YooKassaPaymentProvider(kwargs["shop_id"], kwargs["secret_key"])  # type: ignore[arg-type]
     raise ValueError(f"Unknown payment provider: {name}")
 
 
