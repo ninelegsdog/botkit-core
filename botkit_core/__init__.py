@@ -24,4 +24,4 @@ __all__ = [
     "tracing",
     "webhook",
 ]
-__version__ = "0.8.2"
+__version__ = "0.8.5"
