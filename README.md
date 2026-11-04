@@ -158,3 +158,19 @@ changes there require a version bump, because all nine bots pin a specific tag.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+```mermaid
+graph TD
+  A[botkit-core] --> B[payments]
+  A --> C[metrics]
+  A --> D[errors]
+  A --> E[webhook]
+  A --> F[logging]
+  A --> G[tracing]
+  A --> H[sentry]
+  A --> I[middleware]
+  B --> J[PaymentProvider Protocol]
+  B --> K[YooKassa]
+  B --> L[Telegram Stars]
+  B --> M[Mock for tests]
+```
