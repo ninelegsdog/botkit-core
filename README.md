@@ -75,7 +75,6 @@ pip install -e ".[dev]"
 | `botkit_core.logging` | Structured JSON logging via `python-json-logger` |
 | `botkit_core.middleware.logging` | aiohttp request/response logging middleware |
 | `botkit_core.tracing` | OpenTelemetry OTLP tracer setup; honours `OTEL_EXPORTER_OTLP_ENDPOINT` |
-| `botkit_core.sentry` | Lazy `init_sentry(dsn)` — no import-time cost when Sentry is not used |
 | `botkit_core.webhook` | `build_webhook_app` — aiohttp + aiogram webhook application |
 
 ## Quickstart
