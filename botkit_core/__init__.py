@@ -7,7 +7,6 @@ from botkit_core import (
     metrics,
     middleware,
     payments,
-    sentry,
     tracing,
     webhook,
 )
@@ -20,7 +19,6 @@ __all__ = [
     "metrics",
     "middleware",
     "payments",
-    "sentry",
     "tracing",
     "webhook",
 ]

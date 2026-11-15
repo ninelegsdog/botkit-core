@@ -1,14 +1,13 @@
-"""Tests for botkit_core core modules — metrics, errors, webhook, sentry."""
+"""Tests for botkit_core core modules — metrics, errors, webhook."""
 from __future__ import annotations
 
 import asyncio
 from typing import Any
 
-import pytest
 from aiogram import Bot, Dispatcher
 from aiogram.exceptions import TelegramNetworkError
 
-from botkit_core import errors, metrics, sentry, webhook
+from botkit_core import errors, metrics, webhook
 
 
 def test_version() -> None:
@@ -17,16 +16,6 @@ def test_version() -> None:
     assert botkit_core.__version__ == "0.8.5"
 
 
-def test_sentry_lazy_noop_no_dsn() -> None:
-    sentry.init_sentry(None)
-
-
-def test_sentry_init_with_dsn_missing_pkg(monkeypatch: pytest.MonkeyPatch) -> None:
-    def fake_import(name, *a, **k):
-        raise ImportError("no sentry_sdk")
-
-    monkeypatch.setitem(__import__("builtins").__dict__, "__import__", fake_import)
-    sentry.init_sentry("https://x@sentry.io/1")
 
 
 def test_errors_counter_returns_shared() -> None:
